@@ -14,64 +14,45 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.anton.calculator.data.Datasource
-import com.anton.calculator.data.removeElement
-import com.anton.calculator.data.solveExpression
 import com.anton.calculator.models.CalcButton
 import com.anton.calculator.ui.theme.CalculatorTheme
 
-
 @Composable
 fun CalculatorApp(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    calculatorViewModel: CalculatorViewModel = viewModel()
 ) {
-    var expression by rememberSaveable { mutableStateOf("") }
-    var result by rememberSaveable { mutableStateOf("") }
-    var history by rememberSaveable { mutableStateOf(mutableListOf<String>()) }
+
+    val calculatorUiState by calculatorViewModel.uiState.collectAsState()
 
     Column(
         modifier = modifier.fillMaxSize()
     ) {
 
         CalculatorScreen(
-            expression = expression,
-            result = result,
-            history = history,
+            expression = calculatorViewModel.expression,
+            result = calculatorUiState.result,
+            history = calculatorViewModel.history,
             modifier = Modifier
                 .weight(Datasource().takeWeightForScreen())
         )
         CalculatorKeyboard(
-            onSymbolClick = { expression += it },
-            onACClick = {
-                expression = ""
-                result = ""
-            },
-            onDELClick = {
-                expression = removeElement(it)
-            },
-            onEqualClick = {
-
-                if (expression.isEmpty()) {
-                    return@CalculatorKeyboard
-                }
-                result = solveExpression(it)
-                history.add("$it = $result")
-                if (history.size > 3) {
-                    history.removeFirst()
-                }
-            },
+            onSymbolClick = { calculatorViewModel.onDefaultButtonClick(it) },
+            onACClick = { calculatorViewModel.onACButtonClick() },
+            onDELClick = { calculatorViewModel.onRemoveButtonClick() },
+            onEqualClick = {calculatorViewModel.onEqualButtonClick() },
             elements = Datasource().takeButtonList(),
-            expression = expression,
+            expression = calculatorViewModel.expression,
             modifier = Modifier
                 .weight(Datasource().takeWeightForKeyboard())
         )
@@ -81,16 +62,14 @@ fun CalculatorApp(
 @Composable
 fun CalculatorKeyboard(
     modifier: Modifier = Modifier,
-    onSymbolClick: (String) -> Unit,
-    onACClick: (String) -> Unit,
+    onSymbolClick: (CalcButton) -> Unit,
+    onACClick: () -> Unit,
     onDELClick: (String) -> Unit,
     onEqualClick: (String) -> Unit,
     elements: List<CalcButton>,
     expression: String
 ) {
 
-    var prevElementIsFunList by rememberSaveable { mutableStateOf(mutableListOf(false)) }
-    var prevElementIsDot by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -107,22 +86,7 @@ fun CalculatorKeyboard(
                     CalculatorButton(
                         symbol = temp.symbol,
                         expression = expression,
-                        onClick = {
-                            if ("." == temp.symbol && prevElementIsDot.not()) {
-                                onSymbolClick(temp.element)
-                                prevElementIsDot = true
-                                prevElementIsFunList.add(temp.isFunction)
-                            } else if (
-                                (prevElementIsFunList.last().not() || temp.isFunction.not()) &&
-                                ("." == temp.symbol).not()
-                            ) {
-                                onSymbolClick(temp.element)
-                                if (temp.isFunction) {
-                                    prevElementIsDot = false
-                                }
-                                prevElementIsFunList.add(temp.isFunction)
-                            }
-                        },
+                        onClick = { onSymbolClick(temp) },
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
@@ -139,10 +103,7 @@ fun CalculatorKeyboard(
             CalculatorButton(
                 symbol = "AC",
                 expression = expression,
-                onClick = {
-                    prevElementIsFunList = mutableListOf(false)
-                    onACClick(expression)
-                },
+                onClick = { onACClick() },
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
@@ -150,27 +111,17 @@ fun CalculatorKeyboard(
             CalculatorButton(
                 symbol = "DEL",
                 expression = expression,
-                onClick = {
-                    if (prevElementIsFunList.size > 1) {
-                        if (prevElementIsFunList.last()) {
-                            prevElementIsDot = true
-                        }
-                        prevElementIsFunList.removeLast()
-                    }
-                    onDELClick(expression)
-                },
+                onClick = { onDELClick(expression) },
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
             )
             if (LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                val calcButton = CalcButton("PI", false, "PI")
                 CalculatorButton(
                     symbol = "PI",
                     expression = expression,
-                    onClick = {
-                        onSymbolClick("PI")
-                        prevElementIsFunList.add(false)
-                    },
+                    onClick = { onSymbolClick(calcButton) },
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
@@ -179,9 +130,7 @@ fun CalculatorKeyboard(
             CalculatorButton(
                 symbol = "=",
                 expression = expression,
-                onClick = {
-                    onEqualClick(expression)
-                },
+                onClick = { onEqualClick(expression) },
                 modifier = Modifier
                     .weight(2f)
                     .fillMaxHeight()
