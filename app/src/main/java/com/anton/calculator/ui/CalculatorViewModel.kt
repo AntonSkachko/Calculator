@@ -1,14 +1,16 @@
 package com.anton.calculator.ui
 
+import android.content.res.Configuration
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import com.anton.calculator.data.Datasource
 import com.anton.calculator.models.CalcButton
+import com.anton.calculator.utils.ScreenConfiguration
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import org.mariuszgromada.math.mxparser.Expression
 
 class CalculatorViewModel : ViewModel() {
@@ -18,51 +20,110 @@ class CalculatorViewModel : ViewModel() {
     val uiState: StateFlow<CalculatorUiState> = _uiState.asStateFlow()
 
 
-    var history: MutableList<String> = mutableListOf()
-
-    var expression by mutableStateOf("")
-        private set
-
     private var prevElementIsDot by mutableStateOf(false)
-
-
     private var prevElementIsFunList by mutableStateOf(mutableListOf(false))
 
 
-    init {
-        resetCalculator()
-    }
-
-    fun onDefaultButtonClick(
-        calcButton: CalcButton
-    ) {
-        if ("." == calcButton.symbol && prevElementIsDot.not()) {
-            expression += calcButton.element
-            prevElementIsDot = true
-            prevElementIsFunList.add(calcButton.isFunction)
-        } else if (
-            (prevElementIsFunList.last().not() || calcButton.isFunction.not()) &&
-            ("." == calcButton.symbol).not()
-        ) {
-            expression += calcButton.element
-            if (calcButton.isFunction) {
-                prevElementIsDot = false
-            }
-            prevElementIsFunList.add(calcButton.isFunction)
-        }
+    fun onDefaultButtonClick(calcButton: CalcButton) {
+        val updatedExpression = buildUpdatedExpression(calcButton)
+        updateUiState(_uiState.value.copy(expression = updatedExpression))
     }
 
     fun onACButtonClick() {
-        prevElementIsFunList = mutableListOf(false)
-        prevElementIsDot = false
-        expression = ""
-        _uiState.update {
-            it.copy(
-                result = ""
-            )
+        val newState = CalculatorUiState()
+        val expression = _uiState.value.expression
+        updateUiState(newState)
+
+        if (expression.takeLast(1) == ".") {
+            prevElementIsDot = false
         }
     }
 
+
+    fun onRemoveButtonClick() {
+
+        val expression = _uiState.value.expression
+
+        if (expression.isNotEmpty()) {
+            if (prevElementIsFunList.size > 1) {
+                if (prevElementIsFunList.last()) {
+                    prevElementIsDot = true
+                }
+                prevElementIsFunList.removeLast()
+            }
+
+            updateUiState(
+                _uiState.value.copy(
+                    expression = expression.dropLast(1)
+                )
+            )
+
+            if (expression.takeLast(1) == ".") {
+                prevElementIsDot = false
+            }
+        }
+    }
+
+    fun onEqualButtonClick() {
+
+        val result = solveExpression(_uiState.value.expression)
+
+        val updatedHistory = _uiState.value.history.toMutableList().apply {
+            add("${_uiState.value.expression} = $result")
+            if (size > 3) {
+                removeFirst()
+            }
+        }
+        updateUiState(
+            _uiState.value.copy(
+                result = result,
+                history = updatedHistory
+            )
+        )
+    }
+
+    fun getScreenConfiguration(orientation: Int): ScreenConfiguration {
+        val buttonList: List<CalcButton>
+        val weightForScreen: Float
+        val weightForKeyboard: Float
+
+        if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+            buttonList = Datasource().portraitButtonList
+            weightForScreen = 0.5f
+            weightForKeyboard = 0.5f
+        } else {
+            buttonList = Datasource().landscapeButtonList
+            weightForScreen = 0.3f
+            weightForKeyboard = 0.7f
+        }
+
+        return ScreenConfiguration(buttonList, weightForScreen, weightForKeyboard)
+    }
+
+    private fun buildUpdatedExpression(calcButton: CalcButton): String {
+        val expression = _uiState.value.expression
+
+        if ("." == calcButton.symbol) {
+            if (prevElementIsDot.not() &&
+                prevElementIsFunList.isNotEmpty() &&
+                !prevElementIsFunList.last()
+            ) {
+                prevElementIsDot = true
+                prevElementIsFunList.add(calcButton.isFunction)
+                return "$expression${calcButton.element}"
+            }
+        } else {
+            if (prevElementIsFunList.last().not() || calcButton.isFunction.not()) {
+                if (prevElementIsFunList.isNotEmpty() && prevElementIsFunList.last()) {
+                    prevElementIsDot = false
+                }
+                prevElementIsFunList.add(calcButton.isFunction)
+                return "$expression${calcButton.element}"
+            }
+        }
+
+        return expression
+    }
 
     private fun solveExpression(expression: String): String {
         val answer: String
@@ -82,42 +143,8 @@ class CalculatorViewModel : ViewModel() {
         return answer
     }
 
-    fun onRemoveButtonClick() {
-        if (prevElementIsFunList.size > 1) {
-            if (prevElementIsFunList.last()) {
-                prevElementIsDot = true
-            }
-            prevElementIsFunList.removeLast()
-        }
-
-        if (expression.isNotEmpty()) {
-            expression = expression.substring(0, expression.length - 1)
-        }
+    private fun updateUiState(newState: CalculatorUiState) {
+        _uiState.value = newState
     }
 
-    fun onEqualButtonClick() {
-        if (expression.isNotEmpty()) {
-            _uiState.update {
-                it.copy(
-                    result = solveExpression(expression)
-                )
-            }
-            history.add("$expression = ${_uiState.value.result}")
-            if (history.size > 3) {
-                history.removeFirst()
-            }
-        }
-    }
-
-    private fun resetCalculator() {
-        prevElementIsFunList.clear()
-        prevElementIsFunList.add(false)
-        prevElementIsDot = false
-        expression = ""
-        _uiState.update {
-            it.copy(
-                result = ""
-            )
-        }
-    }
 }

@@ -23,7 +23,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.anton.calculator.data.Datasource
 import com.anton.calculator.models.CalcButton
 import com.anton.calculator.ui.theme.CalculatorTheme
 
@@ -34,27 +33,29 @@ fun CalculatorApp(
 ) {
 
     val calculatorUiState by calculatorViewModel.uiState.collectAsState()
+    val orientation = LocalConfiguration.current.orientation
+    val screenConfiguration = calculatorViewModel.getScreenConfiguration(orientation)
 
     Column(
         modifier = modifier.fillMaxSize()
     ) {
 
         CalculatorScreen(
-            expression = calculatorViewModel.expression,
+            expression = calculatorUiState.expression,
             result = calculatorUiState.result,
-            history = calculatorViewModel.history,
+            history = calculatorUiState.history,
             modifier = Modifier
-                .weight(Datasource().takeWeightForScreen())
+                .weight(screenConfiguration.weightForScreen)
         )
         CalculatorKeyboard(
             onSymbolClick = { calculatorViewModel.onDefaultButtonClick(it) },
             onACClick = { calculatorViewModel.onACButtonClick() },
             onDELClick = { calculatorViewModel.onRemoveButtonClick() },
             onEqualClick = {calculatorViewModel.onEqualButtonClick() },
-            elements = Datasource().takeButtonList(),
-            expression = calculatorViewModel.expression,
+            elements = screenConfiguration.buttonList,
+            expression = calculatorUiState.expression,
             modifier = Modifier
-                .weight(Datasource().takeWeightForKeyboard())
+                .weight(screenConfiguration.weightForKeyboard)
         )
     }
 }
