@@ -21,7 +21,7 @@ class CalculatorViewModel : ViewModel() {
 
 
     private var prevElementIsDot by mutableStateOf(false)
-    private var prevElementIsFunList by mutableStateOf(mutableListOf(false))
+    private var prevElementIsFunList by mutableStateOf(mutableListOf(true))
 
 
     fun onDefaultButtonClick(calcButton: CalcButton) {
@@ -37,6 +37,7 @@ class CalculatorViewModel : ViewModel() {
         if (expression.takeLast(1) == ".") {
             prevElementIsDot = false
         }
+        prevElementIsFunList = mutableListOf(true)
     }
 
 
@@ -112,7 +113,7 @@ class CalculatorViewModel : ViewModel() {
                 prevElementIsFunList.add(calcButton.isFunction)
                 return "$expression${calcButton.element}"
             }
-        } else {
+        } else{
             if (prevElementIsFunList.last().not() || calcButton.isFunction.not()) {
                 if (prevElementIsFunList.isNotEmpty() && prevElementIsFunList.last()) {
                     prevElementIsDot = false

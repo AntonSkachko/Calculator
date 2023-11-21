@@ -1,7 +1,6 @@
 package com.anton.calculator.ui
 
 import android.content.res.Configuration
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,7 +9,10 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,7 +27,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.anton.calculator.models.CalcButton
 import com.anton.calculator.ui.theme.CalculatorTheme
-
 @Composable
 fun CalculatorApp(
     modifier: Modifier = Modifier,
@@ -39,7 +40,6 @@ fun CalculatorApp(
     Column(
         modifier = modifier.fillMaxSize()
     ) {
-
         CalculatorScreen(
             expression = calculatorUiState.expression,
             result = calculatorUiState.result,
@@ -51,7 +51,7 @@ fun CalculatorApp(
             onSymbolClick = { calculatorViewModel.onDefaultButtonClick(it) },
             onACClick = { calculatorViewModel.onACButtonClick() },
             onDELClick = { calculatorViewModel.onRemoveButtonClick() },
-            onEqualClick = {calculatorViewModel.onEqualButtonClick() },
+            onEqualClick = { calculatorViewModel.onEqualButtonClick() },
             elements = screenConfiguration.buttonList,
             expression = calculatorUiState.expression,
             modifier = Modifier
@@ -105,14 +105,16 @@ fun CalculatorKeyboard(
                 symbol = "AC",
                 expression = expression,
                 onClick = { onACClick() },
+                isFunction = true,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
             )
             CalculatorButton(
-                symbol = "DEL",
+                symbol = "del",
                 expression = expression,
                 onClick = { onDELClick(expression) },
+                isFunction = true,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
@@ -132,6 +134,7 @@ fun CalculatorKeyboard(
                 symbol = "=",
                 expression = expression,
                 onClick = { onEqualClick(expression) },
+                isFunction = true,
                 modifier = Modifier
                     .weight(2f)
                     .fillMaxHeight()
@@ -195,25 +198,30 @@ fun CalculatorButton(
     modifier: Modifier = Modifier,
     expression: String,
     onClick: (String) -> Unit,
-    symbol: String
+    symbol: String,
+    isFunction: Boolean = false
 ) {
-    Button(
+    ElevatedButton(
         onClick = {
             onClick(expression)
         },
         modifier = modifier
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                shape = MaterialTheme.shapes.medium
-            ),
-        shape = MaterialTheme.shapes.medium,
+            .padding(4.dp)
+            .size(64.dp),
+        shape = MaterialTheme.shapes.small,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (isFunction) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.secondary,
+            contentColor = if (isFunction) MaterialTheme.colorScheme.onPrimary
+            else MaterialTheme.colorScheme.onSecondary
+        )
     ) {
 
         Text(
             text = symbol,
-            fontSize = 25.sp
+            fontSize = 22.sp
         )
+
     }
 }
 
