@@ -1,6 +1,7 @@
 package com.anton.calculator.ui
 
 import android.content.res.Configuration
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -65,6 +66,7 @@ class CalculatorViewModel : ViewModel() {
         }
     }
 
+
     fun onEqualButtonClick() {
 
         val result = solveExpression(_uiState.value.expression)
@@ -89,11 +91,11 @@ class CalculatorViewModel : ViewModel() {
         val weightForKeyboard: Float
 
         if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-            buttonList = Datasource().portraitButtonList
+            buttonList = Datasource.portraitButtonList
             weightForScreen = 0.5f
             weightForKeyboard = 0.5f
         } else {
-            buttonList = Datasource().landscapeButtonList
+            buttonList = Datasource.landscapeButtonList
             weightForScreen = 0.3f
             weightForKeyboard = 0.7f
         }
@@ -113,7 +115,7 @@ class CalculatorViewModel : ViewModel() {
                 prevElementIsFunList.add(calcButton.isFunction)
                 return "$expression${calcButton.element}"
             }
-        } else{
+        } else {
             if (prevElementIsFunList.last().not() || calcButton.isFunction.not()) {
                 if (prevElementIsFunList.isNotEmpty() && prevElementIsFunList.last()) {
                     prevElementIsDot = false

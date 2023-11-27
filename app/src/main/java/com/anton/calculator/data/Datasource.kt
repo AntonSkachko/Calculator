@@ -2,7 +2,7 @@ package com.anton.calculator.data
 
 import com.anton.calculator.models.CalcButton
 
-class Datasource {
+object Datasource {
     val portraitButtonList = listOf(
         CalcButton("1", false, "1"),
         CalcButton("2", false, "2"),
